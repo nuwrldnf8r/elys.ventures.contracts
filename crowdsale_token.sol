@@ -8,6 +8,9 @@ contract CrowdsaleToken is ERC721Enumerable, Ownable{
     string private _metadata;
     uint256 private _currentTokenId = 1;
 
+    mapping (uint256 => uint256) private _timeStampMap;
+    mapping (uint256 => bool) private _canTransfer;
+
     constructor(string memory metadata) ERC721("TOA Crowdsale Token", "TOAReceipt") Ownable(msg.sender) {
         _metadata = metadata;
     }
@@ -20,11 +23,30 @@ contract CrowdsaleToken is ERC721Enumerable, Ownable{
     function mint(address to) public{
         require(_msgSender()==owner(),"Unauthorized");
         _safeMint(to,_currentTokenId);
+        _timeStampMap[_currentTokenId] = block.timestamp;
         _currentTokenId++;
     } 
+
+    function timestamp(uint256 tokenId) public view returns (uint256){
+        _requireOwned(tokenId);
+        return _timeStampMap[tokenId];
+    }
+
+    function setLock(uint256 tokenId, bool lock) public{
+        _requireOwned(tokenId);
+        require(ownerOf(tokenId)==_msgSender(),"Unauthorized");
+        _canTransfer[tokenId] = lock;
+    }
 
     function burn(uint256 tokenId) public onlyOwner{
         _burn(tokenId);
     }
+
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address){
+        require(_canTransfer[tokenId],"Token is locked");
+        return super._update(to, tokenId, auth);
+    }
+
+
 
 }

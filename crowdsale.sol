@@ -45,15 +45,10 @@ contract Crowdsale is Ownable{
         _campaignLengthDays = campaignLengthDays;
         _toaContract = new TOA(metadata);
         _crowdsaleTokenContract = new CrowdsaleToken(metadata);
-        _adminAccount = _msgSender();
     }
 
-    function setAdminAccount(address account) public onlyOwner{
-        require(_adminWithdrawn==0,"Cannot change admin account once funds have been withdrawn");
-        _adminAccount = account;
-    }
-
-    function start() public onlyOwner{
+    function start(address adminAccount) public onlyOwner{
+        _adminAccount = adminAccount;
         _startTime = block.timestamp;
     }
 
@@ -62,6 +57,7 @@ contract Crowdsale is Ownable{
     }
 
     function timeLeft() public view returns (uint256){
+        require(_startTime>0,"Campaign hasn't started yet");
         uint256 totalTime =  campaignLength();
         uint256 timePassed = block.timestamp - _startTime;
         if(timePassed>totalTime) return 0;
@@ -69,6 +65,7 @@ contract Crowdsale is Ownable{
     }
 
     function canPurchase(uint256 toPurchase) public view returns (bool){
+        if(_startTime==0) return false;
         uint256 numPurchased = _crowdsaleTokenContract.totalSupply();
         if(timeLeft()==0) return false;
         if(numPurchased + toPurchase<_maxTOAs) return true;
@@ -145,6 +142,14 @@ contract Crowdsale is Ownable{
                 _crowdsaleTokenContract.burn(tokenIds[i]);
                 _toaContract.mint(_msgSender());
             }
+    }
+
+    function TOAAddress() public view returns (address){
+        return address(_toaContract);
+    }
+
+    function crowdsaleTokenAddress() public view returns (address){
+        return address(_crowdsaleTokenContract);
     }
     
 }
