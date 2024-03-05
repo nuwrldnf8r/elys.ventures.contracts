@@ -37,19 +37,31 @@ contract Crowdsale is Ownable{
 
     uint256 private _startTime;
 
-    constructor(address USDC, uint256 maxTOAs, uint256 priceOfTOAs, uint256 minTOAsSoldThreshold_, uint256 campaignLengthDays, string memory metadata) Ownable(msg.sender){
+    //test
+    uint256 private _blocktimestamp;
+
+    constructor(address USDC, uint256 maxTOAs, uint256 priceOfTOAs, uint256 minTOAsSoldThreshold_, uint256 campaignLengthDays, string memory metadataTOA, string memory metadataCrowdsale) Ownable(msg.sender){
         _USDC = USDC;
         _maxTOAs = maxTOAs;
         _priceOfTOAs = priceOfTOAs;
         _minTOAsSoldThreshold = minTOAsSoldThreshold_;
         _campaignLengthDays = campaignLengthDays;
-        _toaContract = new TOA(metadata);
-        _crowdsaleTokenContract = new CrowdsaleToken(metadata);
+        _toaContract = new TOA(metadataTOA);
+        _crowdsaleTokenContract = new CrowdsaleToken(metadataCrowdsale);
+
+        //test
+        _blocktimestamp = block.timestamp;
+    }
+
+    function _blockTime() private view returns (uint256){
+        //return block.timestamp;
+        //test
+        return _blocktimestamp;
     }
 
     function start(address adminAccount) public onlyOwner{
         _adminAccount = adminAccount;
-        _startTime = block.timestamp;
+        _startTime = _blockTime();
     }
 
     function campaignLength() public view returns (uint256){
@@ -59,7 +71,7 @@ contract Crowdsale is Ownable{
     function timeLeft() public view returns (uint256){
         require(_startTime>0,"Campaign hasn't started yet");
         uint256 totalTime =  campaignLength();
-        uint256 timePassed = block.timestamp - _startTime;
+        uint256 timePassed = _blockTime() - _startTime;
         if(timePassed>totalTime) return 0;
         return totalTime - timePassed;
     }
@@ -77,11 +89,11 @@ contract Crowdsale is Ownable{
     }
 
     function minSold() public view returns (bool){
-        return (_crowdsaleTokenContract.totalSupply()>=_minTOAsSoldThreshold);
+        return (numSold()>=_minTOAsSoldThreshold);
     }
 
     function numSold() public view returns (uint256){
-        return _crowdsaleTokenContract.totalSupply();
+        return _crowdsaleTokenContract.totalSupply() + _toaContract.totalSupply();
     }
 
     function purchase(uint256 toPurchase) public {
@@ -150,6 +162,19 @@ contract Crowdsale is Ownable{
 
     function crowdsaleTokenAddress() public view returns (address){
         return address(_crowdsaleTokenContract);
+    }
+
+    function updateTOAMetadata(string memory metadata) public onlyOwner{
+        _toaContract.updateMetadata(metadata);
+    }
+
+    function updateCrowdsaleTokenMetadata(string memory metadata) public onlyOwner{
+        _crowdsaleTokenContract.updateMetadata(metadata);
+    }
+
+    //test
+    function test_addDays(uint256 numDays) public {
+        _blocktimestamp += numDays * (1 days);
     }
     
 }

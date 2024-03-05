@@ -17,13 +17,15 @@ contract CrowdsaleToken is ERC721Enumerable, Ownable{
 
     function tokenURI(uint256 tokenId) public view override returns (string memory){
         _requireOwned(tokenId);
-        return string(abi.encodePacked("ipfs://", _metadata));
+        return string(abi.encodePacked(_metadata));
     }
 
     function mint(address to) public{
         require(_msgSender()==owner(),"Unauthorized");
+        _canTransfer[_currentTokenId] = true;
         _safeMint(to,_currentTokenId);
         _timeStampMap[_currentTokenId] = block.timestamp;
+        _canTransfer[_currentTokenId] = false;
         _currentTokenId++;
     } 
 
@@ -39,14 +41,17 @@ contract CrowdsaleToken is ERC721Enumerable, Ownable{
     }
 
     function burn(uint256 tokenId) public onlyOwner{
+       _canTransfer[tokenId] = true;
         _burn(tokenId);
     }
 
     function _update(address to, uint256 tokenId, address auth) internal override returns (address){
-        require(_canTransfer[tokenId],"Token is locked");
+        require(_canTransfer[tokenId],"Token is locked");        
         return super._update(to, tokenId, auth);
     }
 
-
+    function updateMetadata(string memory metadata) public onlyOwner{
+        _metadata = metadata;
+    }
 
 }
